@@ -357,10 +357,11 @@ export function tideView(state) {
 // ---------------------------------------------------------------------------
 export function settingsView(state) {
   const s = state.settings;
+  const persistent = state.persistent !== false;
   const f = (key, label, unit, step = 1, note = '') => `<div class="field"><div><label for="set-${key}">${label}</label>${note ? `<div class="note">${note}</div>` : ''}</div><div class="row"><input id="set-${key}" type="number" inputmode="decimal" step="${step}" value="${s[key]}" data-setting="${key}"><span class="unit">${unit}</span></div></div>`;
   const fc = (key, label, unit, step = 1) => `<div class="field"><label for="setc-${key}">${label}</label><div class="row"><input id="setc-${key}" type="number" inputmode="decimal" step="${step}" value="${s.custom[key]}" data-custom="${key}"><span class="unit">${unit}</span></div></div>`;
   return `${header(state)}
-  <p class="hint">Saved on this phone. Values you leave alone follow the team defaults.</p>
+  <p class="hint">${persistent ? 'Saved on this phone. Values you leave alone follow the team defaults.' : 'Preview build: settings reset when the page reloads. The released app saves them on this phone.'}</p>
   <section class="card"><div class="lbl lg">Channel &amp; vessel</div>
     <div class="field"><label>Transit</label><div class="seg sm" style="min-width:200px"><button data-setting="direction" data-value="inbound" aria-pressed="${s.direction !== 'outbound'}">Inbound</button><button data-setting="direction" data-value="outbound" aria-pressed="${s.direction === 'outbound'}">Outbound</button></div></div>
     ${f('course', 'Inbound course', '°T', 1, s.direction === 'outbound' ? `Outbound uses the reciprocal, ${deg3(s.course + 180)}` : '')}

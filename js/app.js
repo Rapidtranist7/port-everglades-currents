@@ -5,6 +5,7 @@ import { buoyState, windNow, historySeries, historyStats, effectiveCourse, inter
 import { lineChart, stickPlot, predictionChart, timeAt, nearest } from './charts.js';
 import { SHIP_PRESETS } from './ships.js';
 import * as M from './model.js';
+import { store, PERSISTENT } from './storage.js';
 
 const REFRESH_MS = 6 * 60 * 1000;
 const DEFAULTS = {
@@ -14,20 +15,13 @@ const DEFAULTS = {
   custom: { lpp: 235, beam: 35, cb: 0.70, alLoaded: 6000, alBallast: 6500 },
 };
 
-// Settings persistence: browser storage when available, in-memory otherwise.
-const mem = {};
-const store = {
-  get(k) { try { const v = window.localStorage.getItem(k); return v == null ? mem[k] : JSON.parse(v); } catch { return mem[k]; } },
-  set(k, v) { mem[k] = v; try { window.localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
-};
-
 const state = {
   settings: { ...DEFAULTS, ...(store.get('pe.settings') || {}), custom: { ...DEFAULTS.custom, ...((store.get('pe.settings') || {}).custom || {}) } },
   ui: { tab: 'now', detail: null, detailMode: 'profile', histMetric: 'cross', histRange: '24h', scrub: null },
   raw: { sea: null, b2: null }, buoys: { sea: null, b2: null },
   windSeries: [], wind: null, wl: [], wlPred: [], hilo: { south: [], tb: [] }, met: {},
   preds: {}, predsDay: null, history: {}, errors: {},
-  lastUpdate: null, nextPullMs: REFRESH_MS, refreshing: false, refreshCount: 0,
+  lastUpdate: null, nextPullMs: REFRESH_MS, refreshing: false, refreshCount: 0, persistent: PERSISTENT,
 };
 
 const root = document.getElementById('app');
