@@ -101,7 +101,7 @@ export function nowView(state) {
   const windLine = (bs) => {
     if (!wind) return `<span class="lbl">Wind</span> no South Port wind data`;
     const side = bs.windCross > 0 ? 'starboard' : 'port';
-    return `<span><span class="lbl">Wind</span> ${kn(bs.windCross, 0)} kn across, to ${side}</span><span>gusts ${kn(wind.gust, 0)}</span>`;
+    return `<span><span class="lbl">Wind</span> ${kn(wind.kn, 0)} kn ${wind.card} · ${kn(bs.windCross, 0)} across, to ${side}</span><span>gusts ${kn(wind.gust, 0)}</span>`;
   };
   const buoyCard = bs => {
     if (!bs.ok) return `<section class="card buoy-card clickable fade-in" data-action="detail" data-buoy="${bs.buoy.key}">
@@ -114,7 +114,7 @@ export function nowView(state) {
       <div class="mini compass-wrap">${miniCompass({ setDeg: bs.rt ? bs.rt.d : bs.avg.dir, driftKn: bs.rt ? bs.rt.s : bs.avg.speed, course, color: buoyColor(bs.buoy), size: 128, scaleKn: Math.max(0.35, (bs.rt ? bs.rt.s : bs.avg.speed) * 1.1) })}</div>
       <div class="body">
         <div class="headline"><span class="big">${kn(bs.headlineCross)}</span><span class="unit">kn cross · setting ${bs.headlineCard}</span></div>
-        <div class="line">${bs.rt ? `${Math.round(bs.rt.depthFt)} ft ${kn(bs.rt.cross)}` : ''} · ${settings.draftFt} ft draft avg ${bs.avg ? kn(bs.avg.cross) : '—'} · drift ${bs.rt ? `${kn(bs.rt.s)} at ${deg3(bs.rt.d)}` : '—'}</div>
+        <div class="line">${bs.rt ? `${Math.round(bs.rt.depthFt)} ft ${bs.headlineFrom === 'rt' ? `<b>${kn(bs.rt.cross)}</b>` : kn(bs.rt.cross)}` : ''} · ${settings.draftFt} ft draft avg ${bs.avg ? (bs.headlineFrom === 'avg' ? `<b>${kn(bs.avg.cross)}</b>` : kn(bs.avg.cross)) : '—'} · drift ${bs.rt ? `${kn(bs.rt.s)} at ${deg3(bs.rt.d)}` : '—'}</div>
       </div>
       <div class="chev">›</div>
       <div class="steer">
