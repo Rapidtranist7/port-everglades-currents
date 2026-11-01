@@ -57,7 +57,7 @@ export function buoyState(buoy, d, settings, wind) {
   const crossAvg = out.avg ? out.avg.cross : crossRT;
   out.crossMax = [crossRT, crossAvg].filter(Number.isFinite).reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a, 0);
   out.status = M.statusFor(out.crossMax, settings.caution, settings.limit);
-  out.headlineCross = Number.isFinite(crossRT) ? crossRT : crossAvg;
+  out.headlineCross = out.crossMax; // larger of the 14 ft bin and the draft average, same value that drives status
   out.headlineCard = M.crossCardinal(out.headlineCross, course);
 
   // Heading from the draft-averaged cross current (falls back to RT).
