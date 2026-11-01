@@ -1,4 +1,4 @@
-// NOAA CO-OPS data access (public API, CORS-enabled). All times requested in lst_ldt (port local time).
+// NOAA CO-OPS data access (public API, CORS-enabled). All times requested in GMT and shown in port time (see time.js).
 const API = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter';
 
 export const STATIONS = {
@@ -20,17 +20,17 @@ export const STATIONS = {
 
 const pad = n => String(n).padStart(2, '0');
 export function fmtApiDate(d) {
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
-/** Parse NOAA "YYYY-MM-DD HH:MM" as local time. */
+/** Parse NOAA "YYYY-MM-DD HH:MM" (requested in GMT) as a UTC instant. */
 export function parseT(t) {
   const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(t);
   if (!m) return new Date(t);
-  return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
 }
 
 async function getJSON(params, { timeout = 20000 } = {}) {
-  const url = `${API}?${new URLSearchParams({ application: 'PortEvergladesCurrents', format: 'json', time_zone: 'lst_ldt', units: 'english', ...params })}`;
+  const url = `${API}?${new URLSearchParams({ application: 'PortEvergladesCurrents', format: 'json', time_zone: 'gmt', units: 'english', ...params })}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {

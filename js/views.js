@@ -6,14 +6,12 @@ import { effectiveCourse, interp } from './compute.js';
 import { miniCompass, compassRose, windCompass, dirArrow, shipDiagram } from './charts.js';
 
 export const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-export const hhmm = d => d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '—';
+export { hhmm, zone } from './time.js';
+import { hhmm, zone, PORT_TZ } from './time.js';
 export const kn = (v, dp = 2) => Number.isFinite(v) ? Math.abs(v).toFixed(dp) : '—';
 export const deg3 = d => Number.isFinite(d) ? String(Math.round(M.norm360(d)) % 360).padStart(3, '0') + '°' : '—';
 export const degS = d => Number.isFinite(d) ? Math.round(M.norm360(d)) + '°' : '—';
 export const ft = (v, dp = 2) => Number.isFinite(v) ? v.toFixed(dp) : '—';
-export function zone() {
-  try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName').value; } catch { return 'ET'; }
-}
 export function ago(d, now = Date.now()) {
   if (!d) return '';
   const m = Math.round((now - d.getTime()) / 60000);
@@ -27,7 +25,7 @@ export function inHours(ms, now = Date.now()) {
   return h ? `in ${h} h ${m % 60} min` : `in ${m} min`;
 }
 const crabTxt = crab => `${Math.abs(crab).toFixed(1)}° crab${Math.abs(crab) < 0.05 ? '' : crab > 0 ? ' to starboard' : ' to port'}`;
-const dayTime = d => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' at ' + hhmm(d);
+const dayTime = d => new Intl.DateTimeFormat('en-US', { timeZone: PORT_TZ, weekday: 'short', month: 'short', day: 'numeric' }).format(d) + ' at ' + hhmm(d);
 const buoyColor = b => b.color === 'blue' ? 'var(--color-blue)' : 'var(--color-orange)';
 const sideWord = (cross, course) => cross > 0 ? 'starboard' : 'port';
 const dirName = settings => settings.direction === 'outbound' ? 'outbound' : 'inbound';

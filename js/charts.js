@@ -21,19 +21,20 @@ function setup(canvas) {
   return { ctx, w, h };
 }
 
-const hhmm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-const dayLbl = d => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+import { hhmm, portCeilHour, portMidnight, portMonthDay, PORT_TZ } from './time.js';
+const dayLbl = d => new Intl.DateTimeFormat('en-US', { timeZone: PORT_TZ, weekday: 'short', month: 'short', day: 'numeric' }).format(d);
 
 function timeTicks(t0, t1, w) {
   const span = t1 - t0, hours = span / 36e5;
   let stepH = hours <= 26 ? 3 : hours <= 80 ? 12 : hours <= 200 ? 24 : 120;
   if (w < 360 && stepH === 3) stepH = 6;
   const ticks = [];
-  const d = new Date(t0); d.setMinutes(0, 0, 0);
-  if (stepH >= 24) d.setHours(0); else d.setHours(Math.ceil(d.getHours() / stepH) * stepH);
+  // Ticks sit on port-local hour marks (00/06/12/18 ET etc.), DST-safe because each step re-derives the wall clock.
+  let d = stepH >= 24 ? portMidnight(new Date(t0), 0) : portCeilHour(new Date(t0), stepH);
+  if (d.getTime() < t0) d = stepH >= 24 ? portMidnight(d, 1) : portCeilHour(new Date(d.getTime() + 60e3), stepH);
   for (let i = 0; i < 200 && d.getTime() <= t1; i++) {
-    if (d.getTime() >= t0) ticks.push(d.getTime());
-    d.setHours(d.getHours() + stepH);          // DST-safe stepping
+    ticks.push(d.getTime());
+    d = stepH >= 24 ? portMidnight(d, stepH / 24) : portCeilHour(new Date(d.getTime() + 60e3), stepH);
   }
   return { ticks, stepH };
 }
@@ -86,7 +87,7 @@ export function lineChart(canvas, o) {
   for (const t of ticks) {
     ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(x(t), padT); ctx.lineTo(x(t), h - padB); ctx.stroke();
     const d = new Date(t);
-    ctx.fillText(stepH >= 24 ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : hhmm(d), x(t), h - 6);
+    ctx.fillText(stepH >= 24 ? portMonthDay(d) : hhmm(d), x(t), h - 6);
   }
   // series
   for (const s of o.series) {
@@ -157,7 +158,7 @@ export function stickPlot(canvas, o) {
   ctx.fillText(`${scaleKn} kn`, padL - 6, padT + 4); ctx.fillText('N', padL - 6, cy - 8); ctx.fillText('S', padL - 6, cy + 10);
   const { ticks, stepH } = timeTicks(o.t0, o.t1, w);
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  for (const t of ticks) { const d = new Date(t); ctx.fillText(stepH >= 24 ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : hhmm(d), x(t), h - 6); }
+  for (const t of ticks) { const d = new Date(t); ctx.fillText(stepH >= 24 ? portMonthDay(d) : hhmm(d), x(t), h - 6); }
   const pts = o.pts || [];
   const maxSticks = Math.floor((w - padL - padR) / 3);
   const step = Math.max(1, Math.ceil(pts.length / maxSticks));

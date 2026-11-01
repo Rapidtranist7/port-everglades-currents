@@ -1,6 +1,7 @@
 // App shell: state, data refresh, routing, event handling, chart mounting.
 import * as N from './noaa.js';
 import * as V from './views.js';
+import * as T from './time.js';
 import { buoyState, windNow, historySeries, historyStats, effectiveCourse, interp } from './compute.js';
 import { lineChart, stickPlot, predictionChart, timeAt, nearest } from './charts.js';
 import { SHIP_PRESETS } from './ships.js';
@@ -53,10 +54,10 @@ async function loadBuoy(b, full) {
 }
 
 async function loadPredictions(force) {
-  const today = new Date().toDateString();
+  const today = T.portDayKey(new Date());
   if (!force && state.predsDay === today && Object.keys(state.preds).length) return;
-  const begin = new Date(); begin.setDate(begin.getDate() - 1); begin.setHours(0, 0, 0, 0);
-  const end = new Date(begin); end.setDate(end.getDate() + 3);
+  const begin = T.portMidnight(new Date(), -1);
+  const end = T.portMidnight(begin, 3);
   await Promise.all(N.STATIONS.predictions.map(async p => {
     const [series, events] = await Promise.all([
       safe('pred-' + p.id, () => N.fetchCurrentPredictions(p.id, begin, end, '30')),
@@ -64,7 +65,7 @@ async function loadPredictions(force) {
     ]);
     if (series) state.preds[p.id] = { series, events: events || [] };
   }));
-  const hiloEnd = new Date(begin); hiloEnd.setDate(hiloEnd.getDate() + 3);
+  const hiloEnd = T.portMidnight(begin, 3);
   const [south, tb] = await Promise.all([
     safe('hilo', () => N.fetchTidePredictions(N.STATIONS.met.id, begin, hiloEnd, 'hilo')),
     safe('hilo', () => N.fetchTidePredictions(N.STATIONS.tideSecondary.id, begin, hiloEnd, 'hilo')),
@@ -127,7 +128,7 @@ async function ensureHistory(range) {
 // ---------------------------------------------------------------------------
 function applyTheme() {
   const t = state.settings.theme;
-  const hour = new Date().getHours();
+  const hour = T.portHour(new Date());
   const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   const dark = t === 'night' || (t === 'auto' && (systemDark || hour < 7 || hour >= 18));
   document.documentElement.dataset.theme = dark ? 'night' : 'day';
@@ -188,7 +189,7 @@ function mountCharts() {
       attachScrub(hc, h.t0, h.t1, ms => {
         draw(ms);
         const el = document.getElementById('histReadout');
-        if (el) el.innerHTML = `${V.hhmm(new Date(ms))} ${new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ` + N.STATIONS.buoys.map((b, i) => { const p = nearest(series[i].pts, ms); return `<span class="c-${b.color}">${b.name}</span> ${p ? V.kn(p.v) + (metric === 'cross' ? ' ' + M.crossCardinal(p.v, course) : metric === 'along' ? (p.v >= 0 ? ' with' : ' against') : '') : '—'}`; }).join(' · ');
+        if (el) el.innerHTML = `${V.hhmm(new Date(ms))} ${T.portMonthDay(new Date(ms))} · ` + N.STATIONS.buoys.map((b, i) => { const p = nearest(series[i].pts, ms); return `<span class="c-${b.color}">${b.name}</span> ${p ? V.kn(p.v) + (metric === 'cross' ? ' ' + M.crossCardinal(p.v, course) : metric === 'along' ? (p.v >= 0 ? ' with' : ' against') : '') : '—'}`; }).join(' · ');
       });
       const scale = Math.max(0.25, Math.ceil(Math.max(0, ...N.STATIONS.buoys.flatMap(b => h.pts[b.key].map(p => p.s))) * 4) / 4);
       const s1 = document.getElementById('stickSea'), s2 = document.getElementById('stickB2');
