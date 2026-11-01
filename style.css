@@ -66,6 +66,8 @@ a:hover { text-decoration: underline; }
 .hdr h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; }
 .hdr .sub { color: var(--color-muted); font-size: var(--text-base); margin-top: var(--space-2); }
 .hdr .sub b { color: var(--color-text); font-weight: 600; }
+.hdr .sub .obs { display: block; font-size: var(--text-sm); margin-top: 2px; }
+.hdr .sub .obs.stale, .hdr .sub .obs.stale b { color: var(--color-orange); }
 .iconbtn { width: 48px; height: 48px; border-radius: 50%; background: var(--color-inset); border: 1px solid var(--color-border); display: grid; place-items: center; color: var(--color-primary); }
 .iconbtn:active { background: var(--color-inset-2); }
 .iconbtn.spin svg { animation: spin 0.9s linear infinite; }

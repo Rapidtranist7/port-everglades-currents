@@ -303,10 +303,7 @@ setInterval(() => {
   state.nextPullMs -= 1000;
   if (state.nextPullMs <= 0) { refresh(false); return; }
   const sub = root.querySelector('.hdr .sub');
-  if (sub && state.lastUpdate) {
-    const m = Math.floor(state.nextPullMs / 60000), s = String(Math.floor((state.nextPullMs % 60000) / 1000)).padStart(2, '0');
-    sub.innerHTML = `Updated <b>${V.hhmm(state.lastUpdate)} ${V.zone()}</b> · next pull in ${m}:${s}`;
-  }
+  if (sub && state.lastUpdate) sub.innerHTML = V.subline(state);
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.lastUpdate && Date.now() - state.lastUpdate.getTime() > REFRESH_MS) refresh(false); });
 window.addEventListener('resize', () => mountCharts());

@@ -35,12 +35,35 @@ const dirName = settings => settings.direction === 'outbound' ? 'outbound' : 'in
 // ---------------------------------------------------------------------------
 // Shared pieces
 // ---------------------------------------------------------------------------
-export function header(state) {
+/** Time stamp of the newest ADCP observation (real-time bin) for each buoy. */
+export function obsTimes(state) {
+  const t = k => { const st = STATIONS.buoys.find(b => b.key === k); const r = state.raw[k]; const o = r && r.latest && st && r.latest[st.rtBin]; return o && o.t ? o.t : null; };
+  return { sea: t('sea'), b2: t('b2') };
+}
+
+/** "Updated 06:14 EST · obs 06:03 · next pull in 5:48" — obs = NOAA observation time, flagged when older than 20 min. */
+export function subline(state) {
   const { lastUpdate, nextPullMs, refreshing } = state;
+  if (!lastUpdate) return refreshing ? 'Loading NOAA data…' : 'Waiting for data';
   const next = nextPullMs > 0 ? `${Math.floor(nextPullMs / 60000)}:${String(Math.floor((nextPullMs % 60000) / 1000)).padStart(2, '0')}` : 'now';
+  const o = obsTimes(state);
+  let obs = '';
+  if (o.sea || o.b2) {
+    const same = o.sea && o.b2 && Math.abs(o.sea - o.b2) < 60e3;
+    const label = same || !o.b2 ? hhmm(o.sea) : (!o.sea ? hhmm(o.b2) : `${hhmm(o.sea)} / ${hhmm(o.b2)}`);
+    const newest = Math.max(o.sea ? o.sea.getTime() : 0, o.b2 ? o.b2.getTime() : 0);
+    const ageMin = Math.max(0, Math.round((Date.now() - newest) / 60e3));
+    const stale = ageMin > 20;
+    obs = `<span class="obs${stale ? ' stale' : ''}">NOAA sample <b>${label}</b> · ${ageMin} min old${stale ? ' · stale' : ''}</span>`;
+  }
+  return `Updated <b>${hhmm(lastUpdate)} ${zone()}</b> · next pull in ${next}${obs}`;
+}
+
+export function header(state) {
+  const { refreshing } = state;
   return `<header class="hdr">
     <div><h1>Port Everglades</h1>
-      <div class="sub">${lastUpdate ? `Updated <b>${hhmm(lastUpdate)} ${zone()}</b> · next pull in ${next}` : (refreshing ? 'Loading NOAA data…' : 'Waiting for data')}</div></div>
+      <div class="sub">${subline(state)}</div></div>
     <button class="iconbtn ${refreshing ? 'spin' : ''}" data-action="refresh" aria-label="Refresh now">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
     </button></header>`;
@@ -409,7 +432,7 @@ export function settingsView(state) {
       <p><b>Set</b> is the direction the water flows toward. Cross is the part of the current across your course; along is the part with or against you. Positive cross on the history chart means setting toward the starboard side of the course.</p>
       <p><b>Heading to steer</b> uses sin(crab) = cross current ÷ speed. The current used is the vector average of the depth bins within your draft.</p>
       <p><b>Wind estimate.</b> True wind from South Port is combined with your speed to get the apparent wind. The side force on the ship's lateral wind area (Blendermann 1994 coefficients for the chosen ship type) is balanced against the hull's sway force at a small drift angle (Clarke 1983 linear derivative plus a crossflow drag term), with Clarke's shallow-water correction for the water depth at each buoy. The result is the leeway angle you must add to the crab. Treat it as rough — it ignores wind yaw moment, waves, rudder-induced drift and the exposure of the South Port anemometer.</p>
-      <p><b>ADCP data.</b> Each buoy reports every 6 minutes in 1 m depth bins from about 11 ft down. NOAA's headline value is the 14 ft bin ("RT"). In-port currents are NOAA predictions fetched once a day.</p>
+      <p><b>ADCP data.</b> Each buoy reports every 6 minutes in 1 m depth bins from about 11 ft down. NOAA's headline value is the 14 ft bin ("RT"). NOAA posts each sample 5–10 minutes after it is taken, so the header shows both the pull time (Updated) and the sample time (obs); obs turns orange when the newest sample is more than 20 minutes old. In-port currents are NOAA predictions fetched once a day.</p>
     </div>
   </section>
   <p class="hint xs mt4">Prototype — not an operating rule, not a certified navigation system.</p>`;
